@@ -34,13 +34,16 @@ def _verify(password: str, stored: str) -> bool:
 
 
 def init_db():
-        username = os.getenv('ALPHAIK_ADMIN_USER', '').strip()
+def init_db():
+    username = os.getenv('ALPHAIK_ADMIN_USER', '').strip()
     password = os.getenv('ALPHAIK_ADMIN_PASSWORD', '')
 
     if not username or not password.strip():
         raise RuntimeError(
             'Administrator credentials must be configured'
         )
+
+    with _db() as con:
     with _db() as con:
         con.executescript('''
         CREATE TABLE IF NOT EXISTS users(
