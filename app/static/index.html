@@ -1,24 +1,1186 @@
-<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Alphaik</title>
+
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Alphaik</title>
+
 <style>
-:root{--bg:#08111f;--panel:#101c2e;--panel2:#15243a;--line:#263a55;--text:#eef4fb;--muted:#91a4bd;--accent:#55a7ff;--warn:#f7b955;--danger:#ff7070;--ok:#59d18b}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Tahoma,Arial,sans-serif}button,input{font:inherit}.hidden{display:none!important}.auth{max-width:420px;margin:80px auto;padding:28px}.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}.auth h1{margin-top:0}.muted{color:var(--muted)}input{width:100%;background:#0a1525;border:1px solid var(--line);color:var(--text);padding:12px;border-radius:9px;margin:6px 0 12px}.btn{border:0;border-radius:9px;padding:11px 16px;background:var(--accent);color:#07111d;font-weight:700;cursor:pointer}.btn.secondary{background:var(--panel2);color:var(--text);border:1px solid var(--line)}.app{display:grid;grid-template-columns:240px 1fr;min-height:100vh}.side{background:#0b1626;border-left:1px solid var(--line);padding:22px}.brand{font-size:23px;font-weight:800;margin-bottom:28px}.nav button{display:block;width:100%;text-align:right;background:transparent;color:var(--muted);border:0;border-radius:9px;padding:12px;margin:3px 0;cursor:pointer}.nav button.active,.nav button:hover{background:var(--panel2);color:var(--text)}main{padding:28px;max-width:1500px;width:100%}.top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:20px}.top h2{margin:0}.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}.kpi .label{font-size:12px;color:var(--muted)}.kpi .value{font-size:28px;font-weight:800;margin-top:8px}.section{margin-top:14px}.two{display:grid;grid-template-columns:2fr 1fr;gap:14px}.health{font-size:54px;font-weight:800}.bar{height:10px;background:#07101b;border-radius:20px;overflow:hidden}.fill{height:100%;background:var(--accent)}.issue{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}.tag{font-size:11px;border-radius:20px;padding:4px 8px}.critical{color:#ff9a9a;background:#3a171c}.warning{color:#ffd390;background:#3b2b10}.project-row{display:flex;justify-content:space-between;align-items:center;padding:14px;border-bottom:1px solid var(--line);cursor:pointer}.project-row:hover{background:var(--panel2)}table{width:100%;border-collapse:collapse;font-size:12px}th,td{padding:10px;border-bottom:1px solid var(--line);text-align:right}th{color:var(--muted);position:sticky;top:0;background:var(--panel)}.table-wrap{max-height:440px;overflow:auto}.upload-box{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.upload-box input{width:auto;margin:0}.empty{padding:30px;text-align:center;color:var(--muted)}.versions{font-size:12px}.version{padding:9px 0;border-bottom:1px solid var(--line)}@media(max-width:900px){.app{grid-template-columns:1fr}.side{display:none}.grid{grid-template-columns:1fr 1fr}.two{grid-template-columns:1fr}main{padding:16px}}
-</style></head><body>
-<section id="login" class="auth card"><h1>Alphaik</h1><p class="muted">Project Controls Intelligence</p><input id="user" placeholder="نام کاربری" value="admin"><input id="pass" type="password" placeholder="رمز عبور" value="Alphaik123!"><button class="btn" id="loginBtn">ورود</button><p id="loginMsg" class="muted"></p></section>
-<div id="app" class="app hidden"><aside class="side"><div class="brand">Alphaik</div><div class="nav"><button class="active" data-view="projects">پروژه‌ها</button><button data-view="dashboard">داشبورد</button><button data-view="schedule">Schedule Analysis</button><button disabled>Progress Analysis — بعداً</button><button disabled>Cost Analysis — بعداً</button><button disabled>Risk Analysis — بعداً</button></div></aside><main>
-<div id="projectsView"><div class="top"><div><h2>پروژه‌ها</h2><div class="muted">یک پروژه انتخاب یا ایجاد کنید.</div></div><button class="btn" id="newProjectBtn">+ پروژه جدید</button></div><div id="projectForm" class="card hidden"><input id="pname" placeholder="نام پروژه"><input id="pcode" placeholder="کد پروژه"><input id="pclient" placeholder="کارفرما"><button class="btn" id="saveProjectBtn">ایجاد پروژه</button></div><div id="projectList" class="card section"></div></div>
-<div id="dashboardView" class="hidden"><div class="top"><div><h2 id="projectTitle">Dashboard</h2><div id="projectMeta" class="muted"></div></div><div class="upload-box"><input id="file" type="file" accept=".xlsx"><button id="uploadBtn" class="btn">آپلود و تحلیل</button></div></div><div id="uploadStatus" class="muted"></div><div class="grid section"><div class="card kpi"><div class="label">Activities</div><div id="activities" class="value">—</div></div><div class="card kpi"><div class="label">Relationships</div><div id="relationships" class="value">—</div></div><div class="card kpi"><div class="label">Critical</div><div id="critical" class="value">—</div></div><div class="card kpi"><div class="label">Near Critical</div><div id="near" class="value">—</div></div><div class="card kpi"><div class="label">Negative Float</div><div id="negative" class="value">—</div></div></div><div class="two section"><div class="card"><h3>Schedule Health</h3><div class="health"><span id="health">—</span><small>/100</small></div><div class="bar"><div id="healthbar" class="fill" style="width:0"></div></div><div id="dates" class="muted section"></div></div><div class="card"><h3>Automatic Findings</h3><div id="issues" class="empty">فایلی تحلیل نشده است.</div></div></div><div class="two section"><div class="card"><h3>Activities</h3><div class="table-wrap"><table><thead><tr><th>ID</th><th>WBS</th><th>Activity</th><th>Duration</th><th>Finish</th><th>TF</th><th>Status</th></tr></thead><tbody id="rows"><tr><td colspan="7" class="empty">داده‌ای موجود نیست.</td></tr></tbody></table></div></div><div class="card"><h3>Versions</h3><div id="versions" class="versions empty">نسخه‌ای موجود نیست.</div></div></div></div>
-<div id="scheduleView" class="hidden"><div class="top"><div><h2>Schedule Analysis</h2><div class="muted">نسخه 0.2 — تحلیل‌های قابل انجام با داده فعلی</div></div></div><div class="card"><p>قواعد فعال: Critical TF ≤ 0، Near Critical 0&lt;TF≤10، Open Start/Finish، Lead، Long Lag و Negative Float.</p><p class="muted">Baseline Variance، Progress و Cost پس از دریافت فیلدهای تکمیلی فعال می‌شوند.</p></div></div>
-</main></div>
+:root {
+    --bg: #08111f;
+    --panel: #101c2e;
+    --panel2: #15243a;
+    --line: #263a55;
+    --text: #eef4fb;
+    --muted: #91a4bd;
+    --accent: #55a7ff;
+    --warn: #f7b955;
+    --danger: #ff7070;
+    --ok: #59d18b;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: Tahoma, Arial, sans-serif;
+}
+
+button, input {
+    font: inherit;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.auth {
+    max-width: 420px;
+    margin: 80px auto;
+    padding: 28px;
+}
+
+.card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 18px;
+}
+
+.auth h1 {
+    margin-top: 0;
+}
+
+.muted {
+    color: var(--muted);
+}
+
+input {
+    width: 100%;
+    background: #0a1525;
+    border: 1px solid var(--line);
+    color: var(--text);
+    padding: 12px;
+    border-radius: 9px;
+    margin: 6px 0 12px;
+}
+
+.btn {
+    border: 0;
+    border-radius: 9px;
+    padding: 11px 16px;
+    background: var(--accent);
+    color: #07111d;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn.secondary {
+    background: var(--panel2);
+    color: var(--text);
+    border: 1px solid var(--line);
+}
+
+.btn.danger {
+    background: #492630;
+    color: #ffd5dc;
+    border: 1px solid #7c3948;
+}
+
+.app {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    min-height: 100vh;
+}
+
+.side {
+    background: #0b1626;
+    border-left: 1px solid var(--line);
+    padding: 22px;
+}
+
+.brand {
+    font-size: 23px;
+    font-weight: 800;
+    margin-bottom: 28px;
+}
+
+.nav button {
+    display: block;
+    width: 100%;
+    text-align: right;
+    background: transparent;
+    color: var(--muted);
+    border: 0;
+    border-radius: 9px;
+    padding: 12px;
+    margin: 3px 0;
+    cursor: pointer;
+}
+
+.nav button.active,
+.nav button:hover {
+    background: var(--panel2);
+    color: var(--text);
+}
+
+main {
+    padding: 28px;
+    max-width: 1500px;
+    width: 100%;
+}
+
+.top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.top h2 {
+    margin: 0;
+}
+
+.session-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+    padding: 12px 16px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+}
+
+.session-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+}
+
+.kpi .label {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.kpi .value {
+    font-size: 28px;
+    font-weight: 800;
+    margin-top: 8px;
+}
+
+.section {
+    margin-top: 14px;
+}
+
+.two {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 14px;
+}
+
+.health {
+    font-size: 54px;
+    font-weight: 800;
+}
+
+.bar {
+    height: 10px;
+    background: #07101b;
+    border-radius: 20px;
+    overflow: hidden;
+}
+
+.fill {
+    height: 100%;
+    background: var(--accent);
+}
+
+.issue {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--line);
+}
+
+.tag {
+    font-size: 11px;
+    border-radius: 20px;
+    padding: 4px 8px;
+}
+
+.critical {
+    color: #ff9a9a;
+    background: #3a171c;
+}
+
+.warning {
+    color: #ffd390;
+    background: #3b2b10;
+}
+
+.project-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px;
+    border-bottom: 1px solid var(--line);
+    cursor: pointer;
+}
+
+.project-row:hover {
+    background: var(--panel2);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+th, td {
+    padding: 10px;
+    border-bottom: 1px solid var(--line);
+    text-align: right;
+}
+
+th {
+    color: var(--muted);
+    position: sticky;
+    top: 0;
+    background: var(--panel);
+}
+
+.table-wrap {
+    max-height: 440px;
+    overflow: auto;
+}
+
+.upload-box {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.upload-box input {
+    width: auto;
+    margin: 0;
+}
+
+.empty {
+    padding: 30px;
+    text-align: center;
+    color: var(--muted);
+}
+
+.versions {
+    font-size: 12px;
+}
+
+.version {
+    padding: 9px 0;
+    border-bottom: 1px solid var(--line);
+}
+
+@media (max-width: 900px) {
+    .app {
+        grid-template-columns: 1fr;
+    }
+
+    .side {
+        display: none;
+    }
+
+    .grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .two {
+        grid-template-columns: 1fr;
+    }
+
+    main {
+        padding: 16px;
+    }
+
+    .session-bar {
+        flex-wrap: wrap;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<!-- Login -->
+
+<section id="login" class="auth card">
+    <h1>Alphaik</h1>
+    <p class="muted">Project Controls Intelligence</p>
+
+    <input
+        id="user"
+        placeholder="نام کاربری"
+        autocomplete="username"
+    >
+
+    <input
+        id="pass"
+        type="password"
+        placeholder="رمز عبور"
+        autocomplete="current-password"
+    >
+
+    <button class="btn" id="loginBtn">ورود</button>
+
+    <p id="loginMsg" class="muted" role="status"></p>
+</section>
+
+
+<!-- Application -->
+
+<div id="app" class="app hidden">
+
+    <aside class="side">
+
+        <div class="brand">Alphaik</div>
+
+        <div class="nav">
+            <button class="active" data-view="projects">
+                پروژه‌ها
+            </button>
+
+            <button data-view="dashboard">
+                داشبورد
+            </button>
+
+            <button data-view="schedule">
+                Schedule Analysis
+            </button>
+
+            <button disabled>
+                Progress Analysis — بعداً
+            </button>
+
+            <button disabled>
+                Cost Analysis — بعداً
+            </button>
+
+            <button disabled>
+                Risk Analysis — بعداً
+            </button>
+        </div>
+
+    </aside>
+
+    <main>
+
+        <!-- User session -->
+
+        <div class="session-bar">
+
+            <div>
+                <strong>Alphaik</strong>
+                <div class="muted" id="currentUser"></div>
+            </div>
+
+            <div class="session-actions">
+                <span id="sessionInfo" class="muted"></span>
+
+                <button
+                    class="btn danger"
+                    id="logoutBtn"
+                    type="button"
+                >
+                    خروج از حساب
+                </button>
+            </div>
+
+        </div>
+
+
+        <!-- Projects -->
+
+        <div id="projectsView">
+
+            <div class="top">
+                <div>
+                    <h2>پروژه‌ها</h2>
+                    <div class="muted">
+                        یک پروژه انتخاب یا ایجاد کنید.
+                    </div>
+                </div>
+
+                <button class="btn" id="newProjectBtn">
+                    + پروژه جدید
+                </button>
+            </div>
+
+            <div id="projectForm" class="card hidden">
+
+                <input id="pname" placeholder="نام پروژه">
+                <input id="pcode" placeholder="کد پروژه">
+                <input id="pclient" placeholder="کارفرما">
+
+                <button class="btn" id="saveProjectBtn">
+                    ایجاد پروژه
+                </button>
+
+            </div>
+
+            <div id="projectList" class="card section"></div>
+
+        </div>
+
+
+        <!-- Dashboard -->
+
+        <div id="dashboardView" class="hidden">
+
+            <div class="top">
+
+                <div>
+                    <h2 id="projectTitle">Dashboard</h2>
+                    <div id="projectMeta" class="muted"></div>
+                </div>
+
+                <div class="upload-box">
+                    <input
+                        id="file"
+                        type="file"
+                        accept=".xlsx"
+                    >
+
+                    <button id="uploadBtn" class="btn">
+                        آپلود و تحلیل
+                    </button>
+                </div>
+
+            </div>
+
+            <div id="uploadStatus" class="muted"></div>
+
+            <div class="grid section">
+
+                <div class="card kpi">
+                    <div class="label">Activities</div>
+                    <div id="activities" class="value">—</div>
+                </div>
+
+                <div class="card kpi">
+                    <div class="label">Relationships</div>
+                    <div id="relationships" class="value">—</div>
+                </div>
+
+                <div class="card kpi">
+                    <div class="label">Critical</div>
+                    <div id="critical" class="value">—</div>
+                </div>
+
+                <div class="card kpi">
+                    <div class="label">Near Critical</div>
+                    <div id="near" class="value">—</div>
+                </div>
+
+                <div class="card kpi">
+                    <div class="label">Negative Float</div>
+                    <div id="negative" class="value">—</div>
+                </div>
+
+            </div>
+
+            <div class="two section">
+
+                <div class="card">
+
+                    <h3>Schedule Health</h3>
+
+                    <div class="health">
+                        <span id="health">—</span>
+                        <small>/100</small>
+                    </div>
+
+                    <div class="bar">
+                        <div
+                            id="healthbar"
+                            class="fill"
+                            style="width:0"
+                        ></div>
+                    </div>
+
+                    <div id="dates" class="muted section"></div>
+
+                </div>
+
+                <div class="card">
+
+                    <h3>Automatic Findings</h3>
+
+                    <div id="issues" class="empty">
+                        فایلی تحلیل نشده است.
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="two section">
+
+                <div class="card">
+
+                    <h3>Activities</h3>
+
+                    <div class="table-wrap">
+
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>WBS</th>
+                                    <th>Activity</th>
+                                    <th>Duration</th>
+                                    <th>Finish</th>
+                                    <th>TF</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+
+                            <tbody id="rows">
+                                <tr>
+                                    <td colspan="7" class="empty">
+                                        داده‌ای موجود نیست.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                    </div>
+
+                </div>
+
+                <div class="card">
+
+                    <h3>Versions</h3>
+
+                    <div id="versions" class="versions empty">
+                        نسخه‌ای موجود نیست.
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- Schedule Analysis -->
+
+        <div id="scheduleView" class="hidden">
+
+            <div class="top">
+
+                <div>
+                    <h2>Schedule Analysis</h2>
+
+                    <div class="muted">
+                        نسخه 0.2 — تحلیل‌های قابل انجام با داده فعلی
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="card">
+
+                <p>
+                    قواعد فعال:
+                    Critical TF ≤ 0،
+                    Near Critical 0&lt;TF≤10،
+                    Open Start/Finish،
+                    Lead،
+                    Long Lag و Negative Float.
+                </p>
+
+                <p class="muted">
+                    Baseline Variance، Progress و Cost
+                    پس از دریافت فیلدهای تکمیلی فعال می‌شوند.
+                </p>
+
+            </div>
+
+        </div>
+
+    </main>
+
+</div>
+
+
 <script>
-let token='',currentProject=null; const $=id=>document.getElementById(id);
-async function api(url,opt={}){opt.headers=Object.assign({},opt.headers||{},token?{Authorization:'Bearer '+token}:{});let r=await fetch(url,opt);let d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.detail||'خطا');return d}
-$('loginBtn').onclick=async()=>{try{let d=await api('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:$('user').value,password:$('pass').value})});token=d.token;$('login').classList.add('hidden');$('app').classList.remove('hidden');loadProjects()}catch(e){$('loginMsg').textContent=e.message}}
-$('newProjectBtn').onclick=()=>$('projectForm').classList.toggle('hidden');
-$('saveProjectBtn').onclick=async()=>{let p=await api('/api/projects',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:$('pname').value,code:$('pcode').value,client:$('pclient').value})});$('projectForm').classList.add('hidden');await loadProjects();openProject(p.id)};
-async function loadProjects(){let ps=await api('/api/projects');$('projectList').innerHTML=ps.length?ps.map(p=>`<div class="project-row" data-id="${p.id}"><div><b>${p.name}</b><div class="muted">${p.code||''} ${p.client?'• '+p.client:''}</div></div><div class="muted">${p.upload_count} فایل</div></div>`).join(''):'<div class="empty">هنوز پروژه‌ای ایجاد نشده.</div>';$('projectList').querySelectorAll('.project-row').forEach(x=>x.onclick=()=>openProject(x.dataset.id))}
-async function openProject(id){currentProject=await api('/api/projects/'+id);$('projectTitle').textContent=currentProject.name;$('projectMeta').textContent=[currentProject.code,currentProject.client].filter(Boolean).join(' • ');show('dashboard');renderProject(currentProject)}
-function renderProject(p){renderAnalysis(p.latest_analysis);$('versions').className='versions';$('versions').innerHTML=p.uploads.length?p.uploads.map(u=>`<div class="version"><b>U${String(u.version_no).padStart(3,'0')}</b> — ${u.filename}<div class="muted">${new Date(u.uploaded_at).toLocaleString('fa-IR')}</div></div>`).join(''):'<div class="empty">نسخه‌ای موجود نیست.</div>'}
-function renderAnalysis(d){if(!d)return;let s=d.summary;[['activities',s.activities],['relationships',s.relationships],['critical',s.critical],['near',s.near_critical],['negative',s.negative_float],['health',s.schedule_health]].forEach(([i,v])=>$(i).textContent=v);$('healthbar').style.width=Math.max(0,Math.min(100,s.schedule_health))+'%';$('dates').textContent=`Project window: ${s.project_start||'—'} → ${s.project_finish||'—'} | Open Start: ${s.open_start} | Open Finish: ${s.open_finish}`;$('issues').className='';$('issues').innerHTML=d.issues.length?d.issues.map(i=>`<div class="issue"><span>${i.message} (${i.count})</span><span class="tag ${i.severity}">${i.severity}</span></div>`).join(''):'<div class="empty">Finding مهمی شناسایی نشد.</div>';$('rows').innerHTML=d.activities.slice(0,300).map(a=>`<tr><td>${a.activity_id??''}</td><td>${a.wbs??''}</td><td>${a.activity_name??''}</td><td>${a.original_duration??''}</td><td>${a.finish??''}</td><td>${a.total_float??''}</td><td>${a.status??''}</td></tr>`).join('')}
-$('uploadBtn').onclick=async()=>{if(!currentProject)return alert('پروژه انتخاب نشده');if(!$('file').files.length)return alert('فایل را انتخاب کنید');let fd=new FormData();fd.append('file',$('file').files[0]);$('uploadStatus').textContent='در حال آپلود و تحلیل...';try{let d=await api(`/api/projects/${currentProject.id}/upload`,{method:'POST',body:fd});$('uploadStatus').textContent=`تحلیل U${String(d._upload.version_no).padStart(3,'0')} با موفقیت انجام شد.`;currentProject=await api('/api/projects/'+currentProject.id);renderProject(currentProject)}catch(e){$('uploadStatus').textContent='خطا: '+e.message}}
-function show(v){['projectsView','dashboardView','scheduleView'].forEach(i=>$(i).classList.add('hidden'));$(v+'View').classList.remove('hidden');document.querySelectorAll('.nav button[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===v))}
-document.querySelectorAll('.nav button[data-view]').forEach(b=>b.onclick=()=>{if(b.dataset.view==='dashboard'&&!currentProject)return;show(b.dataset.view)});
-</script></body></html>
+"use strict";
+
+let token = "";
+let currentProject = null;
+let expiresAt = 0;
+let expiryTimer = null;
+
+const $ = id => document.getElementById(id);
+
+
+/* ----------------------------------------------------------
+   Safe HTML rendering
+---------------------------------------------------------- */
+
+function escapeHTML(value) {
+    return String(value ?? "").replace(
+        /[&<>"']/g,
+        character => ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;"
+        })[character]
+    );
+}
+
+
+/* ----------------------------------------------------------
+   Session state
+---------------------------------------------------------- */
+
+function clearExpiryTimer() {
+    if (expiryTimer !== null) {
+        clearTimeout(expiryTimer);
+        expiryTimer = null;
+    }
+}
+
+function resetSession(message = "") {
+    clearExpiryTimer();
+
+    token = "";
+    expiresAt = 0;
+    currentProject = null;
+
+    $("pass").value = "";
+    $("file").value = "";
+    $("currentUser").textContent = "";
+    $("sessionInfo").textContent = "";
+    $("loginMsg").textContent = message;
+    $("uploadStatus").textContent = "";
+
+    $("app").classList.add("hidden");
+    $("login").classList.remove("hidden");
+
+    $("logoutBtn").disabled = false;
+    $("logoutBtn").textContent = "خروج از حساب";
+}
+
+function expireSession() {
+    if (!token) {
+        return;
+    }
+
+    resetSession(
+        "اعتبار نشست شما پایان یافته است. لطفاً دوباره وارد شوید."
+    );
+}
+
+function scheduleExpiry(seconds) {
+    clearExpiryTimer();
+
+    const lifetime = Number(seconds);
+
+    if (!Number.isFinite(lifetime) || lifetime <= 0) {
+        expireSession();
+        return;
+    }
+
+    expiresAt = Date.now() + lifetime * 1000;
+
+    $("sessionInfo").textContent =
+        "اعتبار نشست: " +
+        Math.round(lifetime / 3600) +
+        " ساعت";
+
+    expiryTimer = setTimeout(
+        expireSession,
+        lifetime * 1000
+    );
+}
+
+
+/* ----------------------------------------------------------
+   API client
+---------------------------------------------------------- */
+
+async function api(url, options = {}) {
+    if (
+        token &&
+        expiresAt &&
+        Date.now() >= expiresAt
+    ) {
+        expireSession();
+        throw new Error("Session expired");
+    }
+
+    const headers = {
+        ...(options.headers || {})
+    };
+
+    if (token) {
+        headers.Authorization = "Bearer " + token;
+    }
+
+    const response = await fetch(
+        url,
+        {
+            ...options,
+            headers
+        }
+    );
+
+    const data = await response.json().catch(
+        () => ({})
+    );
+
+    if (
+        response.status === 401 &&
+        url !== "/api/login"
+    ) {
+        expireSession();
+        throw new Error("Session expired");
+    }
+
+    if (!response.ok) {
+        throw new Error(
+            typeof data.detail === "string"
+                ? data.detail
+                : "درخواست انجام نشد."
+        );
+    }
+
+    return data;
+}
+
+
+/* ----------------------------------------------------------
+   Login
+---------------------------------------------------------- */
+
+$("loginBtn").onclick = async () => {
+    const button = $("loginBtn");
+
+    button.disabled = true;
+    $("loginMsg").textContent = "";
+
+    try {
+        const data = await api(
+            "/api/login",
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    username: $("user").value,
+                    password: $("pass").value
+                })
+            }
+        );
+
+        token = data.token;
+
+        $("currentUser").textContent =
+            "کاربر: " + data.username;
+
+        $("pass").value = "";
+
+        $("login").classList.add("hidden");
+        $("app").classList.remove("hidden");
+
+        scheduleExpiry(data.expires_in);
+
+        if (token) {
+            await loadProjects();
+        }
+
+    } catch (error) {
+        if (!token) {
+            $("loginMsg").textContent =
+                "ورود انجام نشد: " + error.message;
+        } else {
+            $("uploadStatus").textContent =
+                "خطا در دریافت پروژه‌ها: " + error.message;
+        }
+
+    } finally {
+        button.disabled = false;
+    }
+};
+
+
+/* ----------------------------------------------------------
+   Logout
+---------------------------------------------------------- */
+
+$("logoutBtn").onclick = async () => {
+    if (!token) {
+        resetSession();
+        return;
+    }
+
+    const button = $("logoutBtn");
+
+    button.disabled = true;
+    button.textContent = "در حال خروج...";
+
+    try {
+        await api(
+            "/api/logout",
+            {
+                method: "POST"
+            }
+        );
+
+        resetSession(
+            "با موفقیت از حساب خارج شدید."
+        );
+
+    } catch (error) {
+        if (!token) {
+            // An expired or invalid token was already cleared.
+            return;
+        }
+
+        button.disabled = false;
+        button.textContent = "خروج از حساب";
+
+        alert(
+            "ابطال نشست در سرور تأیید نشد. " +
+            "لطفاً اتصال خود را بررسی و دوباره تلاش کنید."
+        );
+    }
+};
+
+
+/* ----------------------------------------------------------
+   Project management
+---------------------------------------------------------- */
+
+$("newProjectBtn").onclick = () => {
+    $("projectForm").classList.toggle("hidden");
+};
+
+$("saveProjectBtn").onclick = async () => {
+    try {
+        const project = await api(
+            "/api/projects",
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    name: $("pname").value,
+                    code: $("pcode").value,
+                    client: $("pclient").value
+                })
+            }
+        );
+
+        $("projectForm").classList.add("hidden");
+
+        await loadProjects();
+        await openProject(project.id);
+
+    } catch (error) {
+        if (token) {
+            alert(error.message);
+        }
+    }
+};
+
+async function loadProjects() {
+    const projects = await api("/api/projects");
+
+    $("projectList").innerHTML = projects.length
+        ? projects.map(project => `
+            <div
+                class="project-row"
+                data-id="${Number(project.id)}"
+            >
+                <div>
+                    <b>${escapeHTML(project.name)}</b>
+                    <div class="muted">
+                        ${escapeHTML(project.code || "")}
+                        ${escapeHTML(
+                            project.client
+                                ? " • " + project.client
+                                : ""
+                        )}
+                    </div>
+                </div>
+                <div class="muted">
+                    ${Number(project.upload_count) || 0} فایل
+                </div>
+            </div>
+        `).join("")
+        : '<div class="empty">هنوز پروژه‌ای ایجاد نشده.</div>';
+
+    $("projectList")
+        .querySelectorAll(".project-row")
+        .forEach(element => {
+            element.onclick = () => {
+                openProject(element.dataset.id).catch(
+                    error => {
+                        if (token) {
+                            alert(error.message);
+                        }
+                    }
+                );
+            };
+        });
+}
+
+async function openProject(id) {
+    currentProject = await api(
+        "/api/projects/" + encodeURIComponent(id)
+    );
+
+    $("projectTitle").textContent = currentProject.name;
+
+    $("projectMeta").textContent = [
+        currentProject.code,
+        currentProject.client
+    ].filter(Boolean).join(" • ");
+
+    show("dashboard");
+
+    renderProject(currentProject);
+}
+
+function renderProject(project) {
+    renderAnalysis(project.latest_analysis);
+
+    $("versions").className = "versions";
+
+    $("versions").innerHTML = project.uploads.length
+        ? project.uploads.map(upload => `
+            <div class="version">
+                <b>
+                    U${String(upload.version_no).padStart(3, "0")}
+                </b>
+                —
+                ${escapeHTML(upload.filename)}
+                <div class="muted">
+                    ${escapeHTML(
+                        new Date(
+                            upload.uploaded_at
+                        ).toLocaleString("fa-IR")
+                    )}
+                </div>
+            </div>
+        `).join("")
+        : '<div class="empty">نسخه‌ای موجود نیست.</div>';
+}
+
+
+/* ----------------------------------------------------------
+   Schedule analysis
+---------------------------------------------------------- */
+
+function renderAnalysis(data) {
+    if (!data) {
+        return;
+    }
+
+    const summary = data.summary;
+
+    [
+        ["activities", summary.activities],
+        ["relationships", summary.relationships],
+        ["critical", summary.critical],
+        ["near", summary.near_critical],
+        ["negative", summary.negative_float],
+        ["health", summary.schedule_health]
+    ].forEach(([id, value]) => {
+        $(id).textContent = value;
+    });
+
+    $("healthbar").style.width =
+        Math.max(
+            0,
+            Math.min(100, summary.schedule_health)
+        ) + "%";
+
+    $("dates").textContent =
+        `Project window: ${summary.project_start || "—"}` +
+        ` → ${summary.project_finish || "—"}` +
+        ` | Open Start: ${summary.open_start}` +
+        ` | Open Finish: ${summary.open_finish}`;
+
+    $("issues").className = "";
+
+    $("issues").innerHTML = data.issues.length
+        ? data.issues.map(issue => {
+            const severity = [
+                "critical",
+                "warning"
+            ].includes(issue.severity)
+                ? issue.severity
+                : "";
+
+            return `
+                <div class="issue">
+                    <span>
+                        ${escapeHTML(issue.message)}
+                        (${Number(issue.count) || 0})
+                    </span>
+                    <span class="tag ${severity}">
+                        ${escapeHTML(issue.severity)}
+                    </span>
+                </div>
+            `;
+        }).join("")
+        : '<div class="empty">Finding مهمی شناسایی نشد.</div>';
+
+    $("rows").innerHTML = data.activities
+        .slice(0, 300)
+        .map(activity => `
+            <tr>
+                <td>${escapeHTML(activity.activity_id)}</td>
+                <td>${escapeHTML(activity.wbs)}</td>
+                <td>${escapeHTML(activity.activity_name)}</td>
+                <td>${escapeHTML(activity.original_duration)}</td>
+                <td>${escapeHTML(activity.finish)}</td>
+                <td>${escapeHTML(activity.total_float)}</td>
+                <td>${escapeHTML(activity.status)}</td>
+            </tr>
+        `).join("");
+}
+
+
+/* ----------------------------------------------------------
+   File upload
+---------------------------------------------------------- */
+
+$("uploadBtn").onclick = async () => {
+    if (!currentProject) {
+        alert("پروژه انتخاب نشده است.");
+        return;
+    }
+
+    if (!$("file").files.length) {
+        alert("فایل را انتخاب کنید.");
+        return;
+    }
+
+    const formData = new FormData();
+
+    formData.append(
+        "file",
+        $("file").files[0]
+    );
+
+    $("uploadStatus").textContent =
+        "در حال آپلود و تحلیل...";
+
+    $("uploadBtn").disabled = true;
+
+    try {
+        const result = await api(
+            `/api/projects/${currentProject.id}/upload`,
+            {
+                method: "POST",
+                body: formData
+            }
+        );
+
+        $("uploadStatus").textContent =
+            `تحلیل U${String(
+                result._upload.version_no
+            ).padStart(3, "0")} با موفقیت انجام شد.`;
+
+        currentProject = await api(
+            "/api/projects/" + currentProject.id
+        );
+
+        renderProject(currentProject);
+
+    } catch (error) {
+        if (token) {
+            $("uploadStatus").textContent =
+                "خطا: " + error.message;
+        }
+
+    } finally {
+        $("uploadBtn").disabled = false;
+    }
+};
+
+
+/* ----------------------------------------------------------
+   Navigation
+---------------------------------------------------------- */
+
+function show(view) {
+    [
+        "projectsView",
+        "dashboardView",
+        "scheduleView"
+    ].forEach(id => {
+        $(id).classList.add("hidden");
+    });
+
+    $(view + "View").classList.remove("hidden");
+
+    document
+        .querySelectorAll(".nav button[data-view]")
+        .forEach(button => {
+            button.classList.toggle(
+                "active",
+                button.dataset.view === view
+            );
+        });
+}
+
+document
+    .querySelectorAll(".nav button[data-view]")
+    .forEach(button => {
+        button.onclick = () => {
+            if (
+                button.dataset.view === "dashboard" &&
+                !currentProject
+            ) {
+                return;
+            }
+
+            show(button.dataset.view);
+        };
+    });
+
+</script>
+
+</body>
+</html>
