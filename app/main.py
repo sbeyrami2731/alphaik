@@ -1,25 +1,200 @@
 
-<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Alphaik</title>
-<style>
-:root{--bg:#08111f;--panel:#101c2e;--panel2:#15243a;--line:#263a55;--text:#eef4fb;--muted:#91a4bd;--accent:#55a7ff;--warn:#f7b955;--danger:#ff7070;--ok:#59d18b}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Tahoma,Arial,sans-serif}button,input{font:inherit}.hidden{display:none!important}.auth{max-width:420px;margin:80px auto;padding:28px}.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}.auth h1{margin-top:0}.muted{color:var(--muted)}input{width:100%;background:#0a1525;border:1px solid var(--line);color:var(--text);padding:12px;border-radius:9px;margin:6px 0 12px}.btn{border:0;border-radius:9px;padding:11px 16px;background:var(--accent);color:#07111d;font-weight:700;cursor:pointer}.btn.secondary{background:var(--panel2);color:var(--text);border:1px solid var(--line)}.app{display:grid;grid-template-columns:240px 1fr;min-height:100vh}.side{background:#0b1626;border-left:1px solid var(--line);padding:22px}.brand{font-size:23px;font-weight:800;margin-bottom:28px}.nav button{display:block;width:100%;text-align:right;background:transparent;color:var(--muted);border:0;border-radius:9px;padding:12px;margin:3px 0;cursor:pointer}.nav button.active,.nav button:hover{background:var(--panel2);color:var(--text)}main{padding:28px;max-width:1500px;width:100%}.top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:20px}.top h2{margin:0}.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}.kpi .label{font-size:12px;color:var(--muted)}.kpi .value{font-size:28px;font-weight:800;margin-top:8px}.section{margin-top:14px}.two{display:grid;grid-template-columns:2fr 1fr;gap:14px}.health{font-size:54px;font-weight:800}.bar{height:10px;background:#07101b;border-radius:20px;overflow:hidden}.fill{height:100%;background:var(--accent)}.issue{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}.tag{font-size:11px;border-radius:20px;padding:4px 8px}.critical{color:#ff9a9a;background:#3a171c}.warning{color:#ffd390;background:#3b2b10}.project-row{display:flex;justify-content:space-between;align-items:center;padding:14px;border-bottom:1px solid var(--line);cursor:pointer}.project-row:hover{background:var(--panel2)}table{width:100%;border-collapse:collapse;font-size:12px}th,td{padding:10px;border-bottom:1px solid var(--line);text-align:right}th{color:var(--muted);position:sticky;top:0;background:var(--panel)}.table-wrap{max-height:440px;overflow:auto}.upload-box{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.upload-box input{width:auto;margin:0}.empty{padding:30px;text-align:center;color:var(--muted)}.versions{font-size:12px}.version{padding:9px 0;border-bottom:1px solid var(--line)}@media(max-width:900px){.app{grid-template-columns:1fr}.side{display:none}.grid{grid-template-columns:1fr 1fr}.two{grid-template-columns:1fr}main{padding:16px}}
-</style></head><body>
-<section id="login" class="auth card"><h1>Alphaik</h1><p class="muted">Project Controls Intelligence</p><input id="user" placeholder="نام کاربری" value="admin"><input id="pass" type="password" placeholder="رمز عبور" autocomplete="current-password"><button class="btn" id="loginBtn">ورود</button><p id="loginMsg" class="muted"></p></section>
-<div id="app" class="app hidden"><aside class="side"><div class="brand">Alphaik</div><div class="nav"><button class="active" data-view="projects">پروژه‌ها</button><button data-view="dashboard">داشبورد</button><button data-view="schedule">Schedule Analysis</button><button disabled>Progress Analysis — بعداً</button><button disabled>Cost Analysis — بعداً</button><button disabled>Risk Analysis — بعداً</button></div></aside><main>
-<div id="projectsView"><div class="top"><div><h2>پروژه‌ها</h2><div class="muted">یک پروژه انتخاب یا ایجاد کنید.</div></div><button class="btn" id="newProjectBtn">+ پروژه جدید</button></div><div id="projectForm" class="card hidden"><input id="pname" placeholder="نام پروژه"><input id="pcode" placeholder="کد پروژه"><input id="pclient" placeholder="کارفرما"><button class="btn" id="saveProjectBtn">ایجاد پروژه</button></div><div id="projectList" class="card section"></div></div>
-<div id="dashboardView" class="hidden"><div class="top"><div><h2 id="projectTitle">Dashboard</h2><div id="projectMeta" class="muted"></div></div><div class="upload-box"><input id="file" type="file" accept=".xlsx"><button id="uploadBtn" class="btn">آپلود و تحلیل</button></div></div><div id="uploadStatus" class="muted"></div><div class="grid section"><div class="card kpi"><div class="label">Activities</div><div id="activities" class="value">—</div></div><div class="card kpi"><div class="label">Relationships</div><div id="relationships" class="value">—</div></div><div class="card kpi"><div class="label">Critical</div><div id="critical" class="value">—</div></div><div class="card kpi"><div class="label">Near Critical</div><div id="near" class="value">—</div></div><div class="card kpi"><div class="label">Negative Float</div><div id="negative" class="value">—</div></div></div><div class="two section"><div class="card"><h3>Schedule Health</h3><div class="health"><span id="health">—</span><small>/100</small></div><div class="bar"><div id="healthbar" class="fill" style="width:0"></div></div><div id="dates" class="muted section"></div></div><div class="card"><h3>Automatic Findings</h3><div id="issues" class="empty">فایلی تحلیل نشده است.</div></div></div><div class="two section"><div class="card"><h3>Activities</h3><div class="table-wrap"><table><thead><tr><th>ID</th><th>WBS</th><th>Activity</th><th>Duration</th><th>Finish</th><th>TF</th><th>Status</th></tr></thead><tbody id="rows"><tr><td colspan="7" class="empty">داده‌ای موجود نیست.</td></tr></tbody></table></div></div><div class="card"><h3>Versions</h3><div id="versions" class="versions empty">نسخه‌ای موجود نیست.</div></div></div></div>
-<div id="scheduleView" class="hidden"><div class="top"><div><h2>Schedule Analysis</h2><div class="muted">نسخه 0.2 — تحلیل‌های قابل انجام با داده فعلی</div></div><div class="card"><p>قواعد فعال: Critical TF ≤ 0، Near Critical 0&lt;TF≤10، Open Start/Finish، Lead، Long Lag و Negative Float.</p><p class="muted">Baseline Variance، Progress و Cost پس از دریافت فیلدهای تکمیلی فعال می‌شوند.</p></div></div>
-</main></div>
-<script>
-let token='',currentProject=null; const $=id=>document.getElementById(id);
-async function api(url,opt={}){opt.headers=Object.assign({},opt.headers||{},token?{Authorization:'Bearer '+token}:{});let r=await fetch(url,opt);let d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.detail||'خطا');return d}
-$('loginBtn').onclick=async()=>{try{let d=await api('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:$('user').value,password:$('pass').value})});token=d.token;$('login').classList.add('hidden');$('app').classList.remove('hidden');loadProjects()}catch(e){$('loginMsg').textContent=e.message}}
-$('newProjectBtn').onclick=()=>$('projectForm').classList.toggle('hidden');
-$('saveProjectBtn').onclick=async()=>{let p=await api('/api/projects',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:$('pname').value,code:$('pcode').value,client:$('pclient').value})});$('projectForm').classList.add('hidden');await loadProjects();openProject(p.id)};
-async function loadProjects(){let ps=await api('/api/projects');$('projectList').innerHTML=ps.length?ps.map(p=>`<div class="project-row" data-id="${p.id}"><div><b>${p.name}</b><div class="muted">${p.code||''} ${p.client?'• '+p.client:''}</div></div><div class="muted">${p.upload_count} فایل</div></div>`).join(''):'<div class="empty">هنوز پروژه‌ای ایجاد نشده.</div>';$('projectList').querySelectorAll('.project-row').forEach(x=>x.onclick=()=>openProject(x.dataset.id))}
-async function openProject(id){currentProject=await api('/api/projects/'+id);$('projectTitle').textContent=currentProject.name;$('projectMeta').textContent=[currentProject.code,currentProject.client].filter(Boolean).join(' • ');show('dashboard');renderProject(currentProject)}
-function renderProject(p){renderAnalysis(p.latest_analysis);$('versions').className='versions';$('versions').innerHTML=p.uploads.length?p.uploads.map(u=>`<div class="version"><b>U${String(u.version_no).padStart(3,'0')}</b> — ${u.filename}<div class="muted">${new Date(u.uploaded_at).toLocaleString('fa-IR')}</div></div>`).join(''):'<div class="empty">نسخه‌ای موجود نیست.</div>'}
-function renderAnalysis(d){if(!d)return;let s=d.summary;[['activities',s.activities],['relationships',s.relationships],['critical',s.critical],['near',s.near_critical],['negative',s.negative_float],['health',s.schedule_health]].forEach(([i,v])=>$(i).textContent=v);$('healthbar').style.width=Math.max(0,Math.min(100,s.schedule_health))+'%';$('dates').textContent=`Project window: ${s.project_start||'—'} → ${s.project_finish||'—'} | Open Start: ${s.open_start} | Open Finish: ${s.open_finish}`;$('issues').className='';$('issues').innerHTML=d.issues.length?d.issues.map(i=>`<div class="issue"><span>${i.message} (${i.count})</span><span class="tag ${i.severity}">${i.severity}</span></div>`).join(''):'<div class="empty">Finding مهمی شناسایی نشد.</div>';$('rows').innerHTML=d.activities.slice(0,300).map(a=>`<tr><td>${a.activity_id??''}</td><td>${a.wbs??''}</td><td>${a.activity_name??''}</td><td>${a.original_duration??''}</td><td>${a.finish??''}</td><td>${a.total_float??''}</td><td>${a.status??''}</td></tr>`).join('')}
-$('uploadBtn').onclick=async()=>{if(!currentProject)return alert('پروژه انتخاب نشده');if(!$('file').files.length)return alert('فایل را انتخاب کنید');let fd=new FormData();fd.append('file',$('file').files[0]);$('uploadStatus').textContent='در حال آپلود و تحلیل...';try{let d=await api(`/api/projects/${currentProject.id}/upload`,{method:'POST',body:fd});$('uploadStatus').textContent=`تحلیل U${String(d._upload.version_no).padStart(3,'0')} با موفقیت انجام شد.`;currentProject=await api('/api/projects/'+currentProject.id);renderProject(currentProject)}catch(e){$('uploadStatus').textContent='خطا: '+e.message}}
-function show(v){['projectsView','dashboardView','scheduleView'].forEach(i=>$(i).classList.add('hidden'));$(v+'View').classList.remove('hidden');document.querySelectorAll('.nav button[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===v))}
-document.querySelectorAll('.nav button[data-view]').forEach(b=>b.onclick=()=>{if(b.dataset.view==='dashboard'&&!currentProject)return;show(b.dataset.view)});
-</script></body></html>
+from pathlib import Path
+import json
+
+from fastapi import (
+    FastAPI,
+    UploadFile,
+    File,
+    HTTPException,
+    Header
+)
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
+
+from .analyzer import parse_workbook, analyze
+from . import storage
+
+
+BASE = Path(__file__).resolve().parent
+
+app = FastAPI(
+    title="Alphaik Project Controls",
+    version="0.2.0"
+)
+
+app.mount(
+    "/static",
+    StaticFiles(directory=BASE / "static"),
+    name="static"
+)
+
+
+@app.on_event("startup")
+def startup():
+    storage.init_db()
+
+
+@app.get("/")
+def home():
+    return FileResponse(BASE / "static" / "index.html")
+
+
+@app.get("/api/health")
+def health():
+    return {
+        "status": "ok",
+        "service": "alphaik",
+        "version": "0.2.0"
+    }
+
+
+class LoginIn(BaseModel):
+    username: str
+    password: str
+
+
+class ProjectIn(BaseModel):
+    name: str
+    code: str | None = None
+    client: str | None = None
+
+
+def auth(authorization: str | None):
+    token = (
+        authorization.removeprefix("Bearer ").strip()
+        if authorization
+        else None
+    )
+
+    user = storage.user_for_token(token)
+
+    if not user:
+        raise HTTPException(
+            401,
+            "Authentication required"
+        )
+
+    return user
+
+
+@app.post("/api/login")
+def api_login(body: LoginIn):
+    token = storage.login(
+        body.username,
+        body.password
+    )
+
+    if not token:
+        raise HTTPException(
+            401,
+            "Invalid username or password"
+        )
+
+    return {
+        "token": token,
+        "username": body.username
+    }
+
+
+@app.get("/api/projects")
+def projects(
+    authorization: str | None = Header(None)
+):
+    auth(authorization)
+    return storage.list_projects()
+
+
+@app.post("/api/projects")
+def project_create(
+    body: ProjectIn,
+    authorization: str | None = Header(None)
+):
+    auth(authorization)
+
+    return storage.create_project(
+        body.name,
+        body.code,
+        body.client
+    )
+
+
+@app.get("/api/projects/{project_id}")
+def project(
+    project_id: int,
+    authorization: str | None = Header(None)
+):
+    auth(authorization)
+
+    p = storage.get_project(project_id)
+
+    if not p:
+        raise HTTPException(
+            404,
+            "Project not found"
+        )
+
+    p["uploads"] = storage.list_uploads(project_id)
+    p["latest_analysis"] = storage.latest_analysis(project_id)
+
+    return p
+
+
+@app.post("/api/projects/{project_id}/upload")
+async def project_upload(
+    project_id: int,
+    file: UploadFile = File(...),
+    authorization: str | None = Header(None)
+):
+    auth(authorization)
+
+    if not storage.get_project(project_id):
+        raise HTTPException(
+            404,
+            "Project not found"
+        )
+
+    if not file.filename.lower().endswith(".xlsx"):
+        raise HTTPException(
+            400,
+            "Current MVP accepts P6 Excel .xlsx exports."
+        )
+
+    try:
+        content = await file.read()
+
+        task, rel = parse_workbook(content)
+        result = analyze(task, rel)
+        result["file_name"] = file.filename
+
+        up = storage.save_upload(
+            project_id,
+            file.filename,
+            content,
+            json.dumps(
+                result,
+                ensure_ascii=False,
+                default=str
+            )
+        )
+
+        result["_upload"] = {
+            "id": up["id"],
+            "version_no": up["version_no"],
+            "uploaded_at": up["uploaded_at"]
+        }
+
+        return result
+
+    except ValueError as exc:
+        raise HTTPException(
+            400,
+            str(exc)
+        )
+
+    except Exception as exc:
+        raise HTTPException(
+            500,
+            f"Analysis failed: {exc}"
+        )
