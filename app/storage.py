@@ -2,11 +2,12 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import os
 import secrets
 import sqlite3
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -21,6 +22,8 @@ DATA_DIR = BASE / "runtime"
 UPLOAD_DIR = DATA_DIR / "uploads"
 DB_PATH = DATA_DIR / "alphaik.db"
 
+SESSION_TTL_HOURS = 8
+
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -34,6 +37,14 @@ def _db():
     con.row_factory = sqlite3.Row
     con.execute("PRAGMA foreign_keys=ON")
     return con
+
+
+# ============================================================
+# Date and time
+# ============================================================
+
+def _now():
+    return datetime.now(timezone.utc).isoformat()
 
 
 # ============================================================
@@ -77,7 +88,7 @@ def _verify(password: str, stored: str) -> bool:
 
 
 # ============================================================
-# Database initialization
+# Database initialization and migration
 # ============================================================
 
 def init_db():
@@ -112,7 +123,8 @@ def init_db():
                 token TEXT PRIMARY KEY,
                 user_id INTEGER NOT NULL
                     REFERENCES users(id) ON DELETE CASCADE,
-                created_at TEXT NOT NULL
+                created_at TEXT NOT NULL,
+                expires_at TEXT
             );
 
             CREATE TABLE IF NOT EXISTS projects (
@@ -137,6 +149,42 @@ def init_db():
             """
         )
 
+        # Migrate databases created by earlier Alphaik versions.
+        session_columns = {
+            row["name"]
+            for row in con.execute(
+                "PRAGMA table_info(sessions)"
+            )
+        }
+
+        if "expires_at" not in session_columns:
+
+            con.execute(
+                """
+                ALTER TABLE sessions
+                ADD COLUMN expires_at TEXT
+                """
+            )
+
+        # Revoke legacy sessions that have no expiry.
+        con.execute(
+            """
+            DELETE FROM sessions
+            WHERE expires_at IS NULL
+            """
+        )
+
+        # Remove expired sessions during initialization.
+        con.execute(
+            """
+            DELETE FROM sessions
+            WHERE expires_at <= ?
+            """,
+            (_now(),)
+        )
+
+        # Create the initial administrator only if
+        # the database contains no users.
         row = con.execute(
             "SELECT id FROM users LIMIT 1"
         ).fetchone()
@@ -161,15 +209,7 @@ def init_db():
 
 
 # ============================================================
-# Date and time
-# ============================================================
-
-def _now():
-    return datetime.now(timezone.utc).isoformat()
-
-
-# ============================================================
-# Authentication
+# Authentication and session management
 # ============================================================
 
 def login(
@@ -180,7 +220,11 @@ def login(
     with _db() as con:
 
         row = con.execute(
-            "SELECT * FROM users WHERE username=?",
+            """
+            SELECT *
+            FROM users
+            WHERE username = ?
+            """,
             (username,)
         ).fetchone()
 
@@ -192,19 +236,27 @@ def login(
 
         token = secrets.token_urlsafe(32)
 
+        now = datetime.now(timezone.utc)
+
+        expires_at = now + timedelta(
+            hours=SESSION_TTL_HOURS
+        )
+
         con.execute(
             """
             INSERT INTO sessions (
                 token,
                 user_id,
-                created_at
+                created_at,
+                expires_at
             )
-            VALUES (?, ?, ?)
+            VALUES (?, ?, ?, ?)
             """,
             (
                 token,
                 row["id"],
-                _now()
+                now.isoformat(),
+                expires_at.isoformat()
             )
         )
 
@@ -226,10 +278,32 @@ def user_for_token(token: str | None):
             FROM sessions s
             JOIN users u
                 ON u.id = s.user_id
-            WHERE s.token=?
+            WHERE s.token = ?
+              AND s.expires_at > ?
+            """,
+            (
+                token,
+                _now()
+            )
+        ).fetchone()
+
+
+def logout(token: str | None) -> bool:
+
+    if not token:
+        return False
+
+    with _db() as con:
+
+        result = con.execute(
+            """
+            DELETE FROM sessions
+            WHERE token = ?
             """,
             (token,)
-        ).fetchone()
+        )
+
+        return result.rowcount > 0
 
 
 # ============================================================
@@ -293,7 +367,11 @@ def get_project(project_id: int):
     with _db() as con:
 
         row = con.execute(
-            "SELECT * FROM projects WHERE id=?",
+            """
+            SELECT *
+            FROM projects
+            WHERE id = ?
+            """,
             (project_id,)
         ).fetchone()
 
@@ -313,7 +391,7 @@ def next_version(project_id: int) -> int:
             SELECT
                 COALESCE(MAX(version_no), 0) + 1 AS n
             FROM uploads
-            WHERE project_id=?
+            WHERE project_id = ?
             """,
             (project_id,)
         ).fetchone()
@@ -377,7 +455,11 @@ def save_upload(
         )
 
         row = con.execute(
-            "SELECT * FROM uploads WHERE id=?",
+            """
+            SELECT *
+            FROM uploads
+            WHERE id = ?
+            """,
             (cur.lastrowid,)
         ).fetchone()
 
@@ -397,7 +479,7 @@ def list_uploads(project_id: int):
                 version_no,
                 status
             FROM uploads
-            WHERE project_id=?
+            WHERE project_id = ?
             ORDER BY version_no DESC
             """,
             (project_id,)
@@ -412,8 +494,6 @@ def list_uploads(project_id: int):
 
 def latest_analysis(project_id: int):
 
-    import json
-
     with _db() as con:
 
         row = con.execute(
@@ -421,7 +501,7 @@ def latest_analysis(project_id: int):
             SELECT *
             FROM uploads
             WHERE
-                project_id=?
+                project_id = ?
                 AND analysis_json IS NOT NULL
             ORDER BY version_no DESC
             LIMIT 1
