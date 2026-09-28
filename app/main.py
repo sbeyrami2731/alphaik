@@ -15,7 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from .analyzer import parse_workbook, analyze
-from . import storage
+from . import storage, postgres_storage
 
 
 # ============================================================
@@ -156,7 +156,6 @@ def api_logout(
 
     token = get_bearer_token(authorization)
 
-    # Expired and unknown tokens are not authenticated.
     auth(authorization)
 
     storage.logout(token)
@@ -164,6 +163,40 @@ def api_logout(
     return {
         "status": "ok",
         "message": "Logged out successfully"
+    }
+
+
+# ============================================================
+# Protected PostgreSQL connectivity check
+# ============================================================
+
+@app.get("/api/admin/postgres-check")
+def postgres_check(
+    authorization: str | None = Header(None)
+):
+
+    auth(authorization)
+
+    try:
+        connected = postgres_storage.check_connection()
+
+    except Exception:
+        # Never expose database URLs or credentials.
+        raise HTTPException(
+            status_code=503,
+            detail="PostgreSQL connection check failed"
+        )
+
+    if not connected:
+        raise HTTPException(
+            status_code=503,
+            detail="PostgreSQL connection check failed"
+        )
+
+    return {
+        "status": "ok",
+        "database": "postgresql",
+        "connected": True
     }
 
 
@@ -295,7 +328,6 @@ async def project_upload(
 
     except Exception:
 
-        # Do not disclose internal exception details to clients.
         raise HTTPException(
             status_code=500,
             detail="Analysis failed"
