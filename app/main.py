@@ -1,6 +1,6 @@
-
 from pathlib import Path
 import json
+import threading
 
 from fastapi import (
     FastAPI,
@@ -37,32 +37,44 @@ app.mount(
 
 
 # ============================================================
+# Background PostgreSQL diagnostics
+# ============================================================
+
+def _check_postgres_in_background():
+    """
+    Run PostgreSQL diagnostics without blocking application
+    startup or Render port binding.
+    """
+
+    try:
+        postgres_storage.check_connection()
+
+    except Exception:
+        # postgres_storage already writes a safe diagnostic
+        # category to the application log.
+        pass
+
+
+# ============================================================
 # Startup
 # ============================================================
 
 @app.on_event("startup")
 def startup():
 
-    # Initialize the current SQLite storage.
-    # PostgreSQL is not yet the active storage backend.
+    # SQLite remains the active storage backend while
+    # PostgreSQL migration is still in progress.
     storage.init_db()
 
-    # Check PostgreSQL automatically on every application
-    # startup. The connection utility writes a safe
-    # diagnostic code to the Render application logs.
-    #
-    # A failed PostgreSQL connection must not prevent
-    # Alphaik from starting while migration is incomplete.
+    # PostgreSQL connectivity is diagnostic only at this stage.
+    # Never block Render/FastAPI startup waiting for PostgreSQL.
+    thread = threading.Thread(
+        target=_check_postgres_in_background,
+        name="alphaik-postgres-check",
+        daemon=True
+    )
 
-    try:
-        postgres_storage.check_connection()
-
-    except Exception:
-        # The diagnostic category has already been logged
-        # inside postgres_storage.check_connection().
-        # Do not log the exception itself: database errors
-        # may contain connection or credential details.
-        pass
+    thread.start()
 
 
 # ============================================================
@@ -201,7 +213,6 @@ def postgres_check(
         connected = postgres_storage.check_connection()
 
     except Exception:
-        # Never expose database URLs or credentials.
         raise HTTPException(
             status_code=503,
             detail="PostgreSQL connection check failed"
