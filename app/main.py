@@ -7,7 +7,8 @@ from fastapi import (
     UploadFile,
     File,
     HTTPException,
-    Header
+    Header,
+    Response
 )
 
 from fastapi.responses import FileResponse
@@ -88,6 +89,14 @@ def home():
     )
 
 
+@app.head("/")
+def home_head():
+    """
+    Explicit HEAD endpoint for platform readiness/port probes.
+    """
+    return Response(status_code=200)
+
+
 @app.get("/api/health")
 def health():
     return {
@@ -95,6 +104,11 @@ def health():
         "service": "alphaik",
         "version": "0.2.0"
     }
+
+
+@app.head("/api/health")
+def health_head():
+    return Response(status_code=200)
 
 
 # ============================================================
