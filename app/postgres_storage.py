@@ -1,4 +1,3 @@
-
 """PostgreSQL connection and safe diagnostics for Alphaik."""
 
 from __future__ import annotations
@@ -13,21 +12,42 @@ from psycopg.rows import dict_row
 logger = logging.getLogger("uvicorn.error")
 
 
+def _required_env(name: str) -> str:
+    """Read a required environment variable."""
+
+    value = os.getenv(name, "").strip()
+
+    if not value:
+        raise RuntimeError(
+            f"{name} is not configured"
+        )
+
+    return value
+
+
 def get_connection():
     """Open a secure PostgreSQL connection."""
 
-    database_url = os.getenv("DATABASE_URL", "").strip()
+    host = _required_env("DB_HOST")
+    port = _required_env("DB_PORT")
+    database = _required_env("DB_NAME")
+    user = _required_env("DB_USER")
+    password = _required_env("DB_PASSWORD")
 
-    if not database_url:
-        raise RuntimeError("DATABASE_URL is not configured")
+    try:
+        port_number = int(port)
 
-    if "[YOUR-PASSWORD]" in database_url:
+    except ValueError as exc:
         raise RuntimeError(
-            "Database password placeholder has not been replaced"
-        )
+            "DB_PORT must be a valid integer"
+        ) from exc
 
     return psycopg.connect(
-        database_url,
+        host=host,
+        port=port_number,
+        dbname=database,
+        user=user,
+        password=password,
         sslmode="require",
         connect_timeout=10,
         row_factory=dict_row,
@@ -88,14 +108,16 @@ def classify_error(exc: Exception) -> str:
         return "SSL_ERROR"
 
     if (
-        "invalid" in message
-        and (
-            "uri" in message
-            or "connection string" in message
-            or "percent" in message
-        )
+        "too many connections" in message
+        or "max client connections reached" in message
     ):
-        return "INVALID_CONNECTION_STRING"
+        return "POOLER_CONNECTION_LIMIT"
+
+    if (
+        "server closed the connection unexpectedly" in message
+        or "connection reset by peer" in message
+    ):
+        return "CONNECTION_DROPPED"
 
     return "OTHER_CONNECTION_ERROR"
 
@@ -106,7 +128,15 @@ def check_connection() -> bool:
     try:
         with get_connection() as connection:
             with connection.cursor() as cursor:
-                cursor.execute("SELECT 1 AS result")
+                cursor.execute(
+                    """
+                    SELECT
+                        1 AS result,
+                        current_database() AS database_name,
+                        current_user AS database_user
+                    """
+                )
+
                 row = cursor.fetchone()
 
         connected = (
@@ -118,6 +148,17 @@ def check_connection() -> bool:
             logger.info(
                 "ALPHAIK_POSTGRES_CHECK: CONNECTED"
             )
+
+            logger.info(
+                "ALPHAIK_POSTGRES_DATABASE: %s",
+                row["database_name"],
+            )
+
+            logger.info(
+                "ALPHAIK_POSTGRES_USER: %s",
+                row["database_user"],
+            )
+
         else:
             logger.warning(
                 "ALPHAIK_POSTGRES_CHECK: UNEXPECTED_RESULT"
@@ -132,5 +173,18 @@ def check_connection() -> bool:
             "ALPHAIK_POSTGRES_CHECK: %s",
             category,
         )
+
+        logger.error(
+            "ALPHAIK_POSTGRES_EXCEPTION: %s",
+            exc.__class__.__name__,
+        )
+
+        sqlstate = getattr(exc, "sqlstate", None)
+
+        if sqlstate:
+            logger.error(
+                "ALPHAIK_POSTGRES_SQLSTATE: %s",
+                sqlstate,
+            )
 
         raise
