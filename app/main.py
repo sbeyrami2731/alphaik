@@ -16,7 +16,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from .analyzer import parse_workbook, analyze
-from . import storage, postgres_storage
+from . import storage, postgres_storage, postgres_schema
 
 
 # ============================================================
@@ -38,21 +38,25 @@ app.mount(
 
 
 # ============================================================
-# Background PostgreSQL diagnostics
+# Background PostgreSQL bootstrap
 # ============================================================
 
-def _check_postgres_in_background():
+def _prepare_postgres_in_background():
     """
-    Run PostgreSQL diagnostics without blocking application
-    startup or Render port binding.
+    Verify PostgreSQL connectivity and prepare the schema
+    without blocking Render/FastAPI startup.
     """
 
     try:
-        postgres_storage.check_connection()
+        connected = postgres_storage.check_connection()
+
+        if connected:
+            postgres_schema.ensure_schema()
 
     except Exception:
-        # postgres_storage already writes a safe diagnostic
-        # category to the application log.
+        # Safe diagnostics are already written by the
+        # PostgreSQL modules. Alphaik must remain available
+        # while migration is in progress.
         pass
 
 
@@ -63,15 +67,14 @@ def _check_postgres_in_background():
 @app.on_event("startup")
 def startup():
 
-    # SQLite remains the active storage backend while
-    # PostgreSQL migration is still in progress.
+    # SQLite remains the active application storage backend
+    # during the controlled migration to PostgreSQL.
     storage.init_db()
 
-    # PostgreSQL connectivity is diagnostic only at this stage.
-    # Never block Render/FastAPI startup waiting for PostgreSQL.
+    # PostgreSQL bootstrap must never block Render port binding.
     thread = threading.Thread(
-        target=_check_postgres_in_background,
-        name="alphaik-postgres-check",
+        target=_prepare_postgres_in_background,
+        name="alphaik-postgres-bootstrap",
         daemon=True
     )
 
