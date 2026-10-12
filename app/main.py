@@ -16,7 +16,12 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from .analyzer import parse_workbook, analyze
-from . import storage, postgres_storage, postgres_schema
+from . import (
+    storage,
+    postgres_storage,
+    postgres_schema,
+    postgres_migration,
+)
 
 
 # ============================================================
@@ -38,25 +43,49 @@ app.mount(
 
 
 # ============================================================
-# Background PostgreSQL bootstrap
+# Background PostgreSQL bootstrap and migration
 # ============================================================
 
 def _prepare_postgres_in_background():
     """
-    Verify PostgreSQL connectivity and prepare the schema
-    without blocking Render/FastAPI startup.
+    Prepare PostgreSQL without blocking Render/FastAPI startup.
+
+    Current migration stage:
+    1. Verify PostgreSQL connectivity.
+    2. Ensure schema version 1 exists.
+    3. Copy current SQLite metadata into PostgreSQL.
+
+    The migration itself is idempotent.
     """
 
     try:
         connected = postgres_storage.check_connection()
 
-        if connected:
-            postgres_schema.ensure_schema()
+        if not connected:
+            return
+
+        postgres_schema.ensure_schema()
+
+        result = (
+            postgres_migration.migrate_sqlite_to_postgres()
+        )
+
+        source = result["source"]
+        target = result["target"]
+
+        if (
+            target["users"] < source["users"]
+            or target["projects"] < source["projects"]
+            or target["uploads"] < source["uploads"]
+        ):
+            raise RuntimeError(
+                "PostgreSQL migration verification failed"
+            )
 
     except Exception:
-        # Safe diagnostics are already written by the
-        # PostgreSQL modules. Alphaik must remain available
-        # while migration is in progress.
+        # Detailed safe diagnostics are emitted by the
+        # migration/database modules. Alphaik must remain
+        # available while migration is being validated.
         pass
 
 
@@ -67,14 +96,15 @@ def _prepare_postgres_in_background():
 @app.on_event("startup")
 def startup():
 
-    # SQLite remains the active application storage backend
-    # during the controlled migration to PostgreSQL.
+    # SQLite is still the active application backend until
+    # the PostgreSQL cutover is explicitly completed.
     storage.init_db()
 
-    # PostgreSQL bootstrap must never block Render port binding.
+    # Database preparation runs in a background thread so
+    # Render port binding and health checks are never blocked.
     thread = threading.Thread(
         target=_prepare_postgres_in_background,
-        name="alphaik-postgres-bootstrap",
+        name="alphaik-postgres-migration",
         daemon=True
     )
 
@@ -94,9 +124,6 @@ def home():
 
 @app.head("/")
 def home_head():
-    """
-    Explicit HEAD endpoint for platform readiness/port probes.
-    """
     return Response(status_code=200)
 
 
