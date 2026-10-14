@@ -17,7 +17,7 @@ from pydantic import BaseModel
 
 from .analyzer import parse_workbook, analyze
 from . import (
-    storage,
+    storage_router as storage,
     postgres_storage,
     postgres_schema,
     postgres_migration,
@@ -96,11 +96,14 @@ def _prepare_postgres_in_background():
 @app.on_event("startup")
 def startup():
 
-    # SQLite is still the active application backend until
-    # the PostgreSQL cutover is explicitly completed.
+    # The active application storage backend is selected
+    # through ALPHAIK_STORAGE_BACKEND.
+    #
+    # Default remains SQLite until PostgreSQL cutover is
+    # explicitly enabled in the environment.
     storage.init_db()
 
-    # Database preparation runs in a background thread so
+    # PostgreSQL preparation runs in a background thread so
     # Render port binding and health checks are never blocked.
     thread = threading.Thread(
         target=_prepare_postgres_in_background,
@@ -132,7 +135,8 @@ def health():
     return {
         "status": "ok",
         "service": "alphaik",
-        "version": "0.2.0"
+        "version": "0.2.0",
+        "storage_backend": storage.backend_name()
     }
 
 
@@ -187,9 +191,13 @@ def get_bearer_token(
 
 def auth(authorization: str | None):
 
-    token = get_bearer_token(authorization)
+    token = get_bearer_token(
+        authorization
+    )
 
-    user = storage.user_for_token(token)
+    user = storage.user_for_token(
+        token
+    )
 
     if not user:
         raise HTTPException(
@@ -221,7 +229,10 @@ def api_login(body: LoginIn):
     return {
         "token": token,
         "username": body.username,
-        "expires_in": storage.SESSION_TTL_HOURS * 3600
+        "expires_in": (
+            storage.SESSION_TTL_HOURS
+            * 3600
+        )
     }
 
 
@@ -230,11 +241,17 @@ def api_logout(
     authorization: str | None = Header(None)
 ):
 
-    token = get_bearer_token(authorization)
+    token = get_bearer_token(
+        authorization
+    )
 
-    auth(authorization)
+    auth(
+        authorization
+    )
 
-    storage.logout(token)
+    storage.logout(
+        token
+    )
 
     return {
         "status": "ok",
@@ -251,10 +268,14 @@ def postgres_check(
     authorization: str | None = Header(None)
 ):
 
-    auth(authorization)
+    auth(
+        authorization
+    )
 
     try:
-        connected = postgres_storage.check_connection()
+        connected = (
+            postgres_storage.check_connection()
+        )
 
     except Exception:
         raise HTTPException(
@@ -284,7 +305,9 @@ def projects(
     authorization: str | None = Header(None)
 ):
 
-    auth(authorization)
+    auth(
+        authorization
+    )
 
     return storage.list_projects()
 
@@ -295,7 +318,9 @@ def project_create(
     authorization: str | None = Header(None)
 ):
 
-    auth(authorization)
+    auth(
+        authorization
+    )
 
     return storage.create_project(
         body.name,
@@ -310,7 +335,9 @@ def project(
     authorization: str | None = Header(None)
 ):
 
-    auth(authorization)
+    auth(
+        authorization
+    )
 
     project_data = storage.get_project(
         project_id
@@ -322,12 +349,16 @@ def project(
             detail="Project not found"
         )
 
-    project_data["uploads"] = storage.list_uploads(
-        project_id
+    project_data["uploads"] = (
+        storage.list_uploads(
+            project_id
+        )
     )
 
     project_data["latest_analysis"] = (
-        storage.latest_analysis(project_id)
+        storage.latest_analysis(
+            project_id
+        )
     )
 
     return project_data
@@ -344,28 +375,40 @@ async def project_upload(
     authorization: str | None = Header(None)
 ):
 
-    auth(authorization)
+    auth(
+        authorization
+    )
 
-    if not storage.get_project(project_id):
+    if not storage.get_project(
+        project_id
+    ):
         raise HTTPException(
             status_code=404,
             detail="Project not found"
         )
 
-    if not file.filename or not file.filename.lower().endswith(
-        ".xlsx"
+    if (
+        not file.filename
+        or not file.filename.lower().endswith(
+            ".xlsx"
+        )
     ):
         raise HTTPException(
             status_code=400,
-            detail="Current MVP accepts P6 Excel .xlsx exports."
+            detail=(
+                "Current MVP accepts "
+                "P6 Excel .xlsx exports."
+            )
         )
 
     try:
 
         content = await file.read()
 
-        task, relationships = parse_workbook(
-            content
+        task, relationships = (
+            parse_workbook(
+                content
+            )
         )
 
         result = analyze(
@@ -373,7 +416,9 @@ async def project_upload(
             relationships
         )
 
-        result["file_name"] = file.filename
+        result["file_name"] = (
+            file.filename
+        )
 
         upload = storage.save_upload(
             project_id,
