@@ -1,6 +1,5 @@
 from pathlib import Path
 import json
-import threading
 
 from fastapi import (
     FastAPI,
@@ -19,8 +18,6 @@ from .analyzer import parse_workbook, analyze
 from . import (
     storage_router as storage,
     postgres_storage,
-    postgres_schema,
-    postgres_migration,
 )
 
 
@@ -43,53 +40,6 @@ app.mount(
 
 
 # ============================================================
-# Background PostgreSQL bootstrap and migration
-# ============================================================
-
-def _prepare_postgres_in_background():
-    """
-    Prepare PostgreSQL without blocking Render/FastAPI startup.
-
-    Current migration stage:
-    1. Verify PostgreSQL connectivity.
-    2. Ensure schema version 1 exists.
-    3. Copy current SQLite metadata into PostgreSQL.
-
-    The migration itself is idempotent.
-    """
-
-    try:
-        connected = postgres_storage.check_connection()
-
-        if not connected:
-            return
-
-        postgres_schema.ensure_schema()
-
-        result = (
-            postgres_migration.migrate_sqlite_to_postgres()
-        )
-
-        source = result["source"]
-        target = result["target"]
-
-        if (
-            target["users"] < source["users"]
-            or target["projects"] < source["projects"]
-            or target["uploads"] < source["uploads"]
-        ):
-            raise RuntimeError(
-                "PostgreSQL migration verification failed"
-            )
-
-    except Exception:
-        # Detailed safe diagnostics are emitted by the
-        # migration/database modules. Alphaik must remain
-        # available while migration is being validated.
-        pass
-
-
-# ============================================================
 # Startup
 # ============================================================
 
@@ -99,19 +49,10 @@ def startup():
     # The active application storage backend is selected
     # through ALPHAIK_STORAGE_BACKEND.
     #
-    # Default remains SQLite until PostgreSQL cutover is
-    # explicitly enabled in the environment.
+    # PostgreSQL is now the active backend in the development
+    # environment. SQLite remains available only as a fallback
+    # backend through the storage router.
     storage.init_db()
-
-    # PostgreSQL preparation runs in a background thread so
-    # Render port binding and health checks are never blocked.
-    thread = threading.Thread(
-        target=_prepare_postgres_in_background,
-        name="alphaik-postgres-migration",
-        daemon=True
-    )
-
-    thread.start()
 
 
 # ============================================================
