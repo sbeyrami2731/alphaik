@@ -8,9 +8,9 @@ import os
 import secrets
 
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 from typing import Any
 
+from . import object_storage
 from . import postgres_schema
 from . import postgres_storage
 
@@ -19,22 +19,7 @@ from . import postgres_storage
 # Storage configuration
 # ============================================================
 
-BASE = Path(__file__).resolve().parent.parent
-
-DATA_DIR = BASE / "runtime"
-UPLOAD_DIR = DATA_DIR / "uploads"
-
 SESSION_TTL_HOURS = 8
-
-DATA_DIR.mkdir(
-    parents=True,
-    exist_ok=True
-)
-
-UPLOAD_DIR.mkdir(
-    parents=True,
-    exist_ok=True
-)
 
 
 # ============================================================
@@ -478,7 +463,7 @@ def save_upload(
     analysis_json: str
 ) -> dict[str, Any]:
 
-    path: Path | None = None
+    object_key: str | None = None
 
     with postgres_storage.get_connection() as connection:
 
@@ -528,29 +513,22 @@ def save_upload(
                     version_row["next_version"]
                 )
 
-                project_dir = (
-                    UPLOAD_DIR
-                    / str(project_id)
+                # --------------------------------------------
+                # Upload the real file to private object storage
+                # --------------------------------------------
+
+                object_key = (
+                    object_storage.upload_project_file(
+                        project_id=project_id,
+                        version_no=version,
+                        filename=filename,
+                        content=content,
+                    )
                 )
 
-                project_dir.mkdir(
-                    parents=True,
-                    exist_ok=True
-                )
-
-                safe_name = (
-                    f"U{version:03d}_"
-                    f"{Path(filename).name}"
-                )
-
-                path = (
-                    project_dir
-                    / safe_name
-                )
-
-                path.write_bytes(
-                    content
-                )
+                # --------------------------------------------
+                # Persist metadata in PostgreSQL
+                # --------------------------------------------
 
                 cursor.execute(
                     """
@@ -585,7 +563,7 @@ def save_upload(
                     (
                         project_id,
                         filename,
-                        str(path),
+                        object_key,
                         _now(),
                         version,
                         analysis_json,
@@ -608,13 +586,17 @@ def save_upload(
 
             connection.rollback()
 
-            if (
-                path is not None
-                and path.exists()
-            ):
+            # If object upload succeeded but database write
+            # failed, remove the uploaded object so storage
+            # and PostgreSQL cannot become inconsistent.
+            if object_key:
+
                 try:
-                    path.unlink()
-                except OSError:
+                    object_storage.delete_file(
+                        object_key
+                    )
+
+                except Exception:
                     pass
 
             raise
