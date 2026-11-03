@@ -128,7 +128,9 @@ def get_bearer_token(
     return token.strip()
 
 
-def auth(authorization: str | None):
+def auth(
+    authorization: str | None
+):
 
     token = get_bearer_token(
         authorization
@@ -152,7 +154,9 @@ def auth(authorization: str | None):
 # ============================================================
 
 @app.post("/api/login")
-def api_login(body: LoginIn):
+def api_login(
+    body: LoginIn
+):
 
     token = storage.login(
         body.username,
@@ -212,11 +216,13 @@ def postgres_check(
     )
 
     try:
+
         connected = (
             postgres_storage.check_connection()
         )
 
     except Exception:
+
         raise HTTPException(
             status_code=503,
             detail="PostgreSQL connection check failed"
@@ -340,19 +346,31 @@ async def project_upload(
             )
         )
 
-    stage = "START"
+    # --------------------------------------------------------
+    # Read file
+    # --------------------------------------------------------
 
     try:
 
-        stage = "READ_FILE"
-
         content = await file.read()
 
-        logger.info(
-            "ALPHAIK_UPLOAD_STAGE: READ_OK"
+    except Exception as exc:
+
+        logger.error(
+            "ALPHAIK_UPLOAD_RESULT: READ_FAILED:%s",
+            exc.__class__.__name__
         )
 
-        stage = "PARSE_WORKBOOK"
+        raise HTTPException(
+            status_code=500,
+            detail="File read failed"
+        )
+
+    # --------------------------------------------------------
+    # Parse workbook
+    # --------------------------------------------------------
+
+    try:
 
         task, relationships = (
             parse_workbook(
@@ -360,26 +378,70 @@ async def project_upload(
             )
         )
 
-        logger.info(
-            "ALPHAIK_UPLOAD_STAGE: PARSE_OK"
+    except ValueError as exc:
+
+        logger.error(
+            "ALPHAIK_UPLOAD_RESULT: PARSE_FAILED:%s",
+            exc.__class__.__name__
         )
 
-        stage = "ANALYZE"
+        raise HTTPException(
+            status_code=400,
+            detail=str(exc)
+        )
+
+    except Exception as exc:
+
+        logger.error(
+            "ALPHAIK_UPLOAD_RESULT: PARSE_FAILED:%s",
+            exc.__class__.__name__
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail="Workbook parsing failed"
+        )
+
+    # --------------------------------------------------------
+    # Analyze workbook
+    # --------------------------------------------------------
+
+    logger.info(
+        "ALPHAIK_UPLOAD_ANALYZE: STARTED"
+    )
+
+    try:
 
         result = analyze(
             task,
             relationships
         )
 
-        logger.info(
-            "ALPHAIK_UPLOAD_STAGE: ANALYZE_OK"
+    except Exception as exc:
+
+        logger.error(
+            "ALPHAIK_UPLOAD_RESULT: ANALYZE_FAILED:%s",
+            exc.__class__.__name__
         )
 
-        result["file_name"] = (
-            file.filename
+        raise HTTPException(
+            status_code=500,
+            detail="Analysis failed"
         )
 
-        stage = "SAVE_UPLOAD"
+    logger.info(
+        "ALPHAIK_UPLOAD_ANALYZE: COMPLETED"
+    )
+
+    result["file_name"] = (
+        file.filename
+    )
+
+    # --------------------------------------------------------
+    # Save metadata + object storage
+    # --------------------------------------------------------
+
+    try:
 
         upload = storage.save_upload(
             project_id,
@@ -392,31 +454,10 @@ async def project_upload(
             )
         )
 
-        logger.info(
-            "ALPHAIK_UPLOAD_STAGE: STORAGE_OK"
-        )
-
-        result["_upload"] = {
-            "id": upload["id"],
-            "version_no": upload["version_no"],
-            "uploaded_at": upload["uploaded_at"]
-        }
-
-        logger.info(
-            "ALPHAIK_UPLOAD_STAGE: COMPLETED"
-        )
-
-        return result
-
     except ValueError as exc:
 
         logger.error(
-            "ALPHAIK_UPLOAD_FAILED_STAGE: %s",
-            stage
-        )
-
-        logger.error(
-            "ALPHAIK_UPLOAD_EXCEPTION: %s",
+            "ALPHAIK_UPLOAD_RESULT: STORAGE_FAILED:%s",
             exc.__class__.__name__
         )
 
@@ -428,16 +469,27 @@ async def project_upload(
     except Exception as exc:
 
         logger.error(
-            "ALPHAIK_UPLOAD_FAILED_STAGE: %s",
-            stage
-        )
-
-        logger.error(
-            "ALPHAIK_UPLOAD_EXCEPTION: %s",
+            "ALPHAIK_UPLOAD_RESULT: STORAGE_FAILED:%s",
             exc.__class__.__name__
         )
 
         raise HTTPException(
             status_code=500,
-            detail="Analysis failed"
+            detail="File storage failed"
         )
+
+    # --------------------------------------------------------
+    # Success
+    # --------------------------------------------------------
+
+    result["_upload"] = {
+        "id": upload["id"],
+        "version_no": upload["version_no"],
+        "uploaded_at": upload["uploaded_at"]
+    }
+
+    logger.info(
+        "ALPHAIK_UPLOAD_RESULT: SUCCESS"
+    )
+
+    return result
