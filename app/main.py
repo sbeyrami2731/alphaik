@@ -1,5 +1,6 @@
 from pathlib import Path
 import json
+import logging
 
 from fastapi import (
     FastAPI,
@@ -19,6 +20,9 @@ from . import (
     storage_router as storage,
     postgres_storage,
 )
+
+
+logger = logging.getLogger("uvicorn.error")
 
 
 # ============================================================
@@ -46,12 +50,6 @@ app.mount(
 @app.on_event("startup")
 def startup():
 
-    # The active application storage backend is selected
-    # through ALPHAIK_STORAGE_BACKEND.
-    #
-    # PostgreSQL is now the active backend in the development
-    # environment. SQLite remains available only as a fallback
-    # backend through the storage router.
     storage.init_db()
 
 
@@ -342,9 +340,19 @@ async def project_upload(
             )
         )
 
+    stage = "START"
+
     try:
 
+        stage = "READ_FILE"
+
         content = await file.read()
+
+        logger.info(
+            "ALPHAIK_UPLOAD_STAGE: READ_OK"
+        )
+
+        stage = "PARSE_WORKBOOK"
 
         task, relationships = (
             parse_workbook(
@@ -352,14 +360,26 @@ async def project_upload(
             )
         )
 
+        logger.info(
+            "ALPHAIK_UPLOAD_STAGE: PARSE_OK"
+        )
+
+        stage = "ANALYZE"
+
         result = analyze(
             task,
             relationships
         )
 
+        logger.info(
+            "ALPHAIK_UPLOAD_STAGE: ANALYZE_OK"
+        )
+
         result["file_name"] = (
             file.filename
         )
+
+        stage = "SAVE_UPLOAD"
 
         upload = storage.save_upload(
             project_id,
@@ -372,22 +392,50 @@ async def project_upload(
             )
         )
 
+        logger.info(
+            "ALPHAIK_UPLOAD_STAGE: STORAGE_OK"
+        )
+
         result["_upload"] = {
             "id": upload["id"],
             "version_no": upload["version_no"],
             "uploaded_at": upload["uploaded_at"]
         }
 
+        logger.info(
+            "ALPHAIK_UPLOAD_STAGE: COMPLETED"
+        )
+
         return result
 
     except ValueError as exc:
+
+        logger.error(
+            "ALPHAIK_UPLOAD_FAILED_STAGE: %s",
+            stage
+        )
+
+        logger.error(
+            "ALPHAIK_UPLOAD_EXCEPTION: %s",
+            exc.__class__.__name__
+        )
 
         raise HTTPException(
             status_code=400,
             detail=str(exc)
         )
 
-    except Exception:
+    except Exception as exc:
+
+        logger.error(
+            "ALPHAIK_UPLOAD_FAILED_STAGE: %s",
+            stage
+        )
+
+        logger.error(
+            "ALPHAIK_UPLOAD_EXCEPTION: %s",
+            exc.__class__.__name__
+        )
 
         raise HTTPException(
             status_code=500,
