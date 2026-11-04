@@ -52,6 +52,22 @@ def _clean_sheet(
     )
 
 
+def _normalize_datetime_column(
+    series: pd.Series
+) -> pd.Series:
+
+    if pd.api.types.is_datetime64_any_dtype(
+        series
+    ):
+        return series
+
+    return pd.to_datetime(
+        series,
+        errors="coerce",
+        format="mixed"
+    )
+
+
 def parse_workbook(
     content: bytes
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -173,14 +189,33 @@ def analyze(
     # Date normalization
     # ========================================================
 
-    for col in [
-        "start_date",
-        "end_date",
-    ]:
-        task[col] = pd.to_datetime(
-            task[col],
-            errors="coerce"
+    logger.info(
+        "ALPHAIK_ANALYZE_STEP: 03A_START_DATE_BEGIN"
+    )
+
+    task["start_date"] = (
+        _normalize_datetime_column(
+            task["start_date"]
         )
+    )
+
+    logger.info(
+        "ALPHAIK_ANALYZE_STEP: 03B_START_DATE_OK"
+    )
+
+    logger.info(
+        "ALPHAIK_ANALYZE_STEP: 03C_END_DATE_BEGIN"
+    )
+
+    task["end_date"] = (
+        _normalize_datetime_column(
+            task["end_date"]
+        )
+    )
+
+    logger.info(
+        "ALPHAIK_ANALYZE_STEP: 03D_END_DATE_OK"
+    )
 
     logger.info(
         "ALPHAIK_ANALYZE_STEP: 04_DATES_OK"
@@ -424,7 +459,6 @@ def analyze(
                 )
             )
 
-    # Safer conversion for JSON-compatible null values.
     activities = (
         activities
         .astype(object)
