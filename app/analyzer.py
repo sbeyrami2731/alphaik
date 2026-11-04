@@ -3,6 +3,7 @@ from __future__ import annotations
 import io
 import logging
 
+from datetime import datetime, timedelta
 from typing import Any
 
 import pandas as pd
@@ -24,6 +25,25 @@ TASK_COLUMNS = {
     "total_float_hr_cnt": "total_float",
     "status_code": "status",
 }
+
+
+P6_DATE_FORMATS = (
+    "%Y-%m-%d %H:%M:%S",
+    "%Y-%m-%d %H:%M",
+    "%Y-%m-%d",
+    "%d-%b-%Y %H:%M:%S",
+    "%d-%b-%Y %H:%M",
+    "%d-%b-%Y",
+    "%d-%b-%y %H:%M:%S",
+    "%d-%b-%y %H:%M",
+    "%d-%b-%y",
+    "%m/%d/%Y %H:%M:%S",
+    "%m/%d/%Y %H:%M",
+    "%m/%d/%Y",
+    "%d/%m/%Y %H:%M:%S",
+    "%d/%m/%Y %H:%M",
+    "%d/%m/%Y",
+)
 
 
 def _clean_sheet(
@@ -52,20 +72,155 @@ def _clean_sheet(
     )
 
 
+def _parse_p6_date_value(
+    value: Any
+) -> pd.Timestamp | pd.NaT:
+
+    if value is None:
+        return pd.NaT
+
+    try:
+        if pd.isna(value):
+            return pd.NaT
+    except (TypeError, ValueError):
+        pass
+
+    if isinstance(
+        value,
+        pd.Timestamp
+    ):
+        return value
+
+    if isinstance(
+        value,
+        datetime
+    ):
+        return pd.Timestamp(value)
+
+    if isinstance(
+        value,
+        (int, float)
+    ):
+        try:
+            excel_origin = datetime(
+                1899,
+                12,
+                30
+            )
+
+            converted = (
+                excel_origin
+                + timedelta(
+                    days=float(value)
+                )
+            )
+
+            return pd.Timestamp(
+                converted
+            )
+
+        except (
+            TypeError,
+            ValueError,
+            OverflowError
+        ):
+            return pd.NaT
+
+    text = str(
+        value
+    ).strip()
+
+    if not text:
+        return pd.NaT
+
+    lowered = text.lower()
+
+    if lowered in {
+        "nan",
+        "nat",
+        "none",
+        "null",
+    }:
+        return pd.NaT
+
+    for date_format in P6_DATE_FORMATS:
+
+        try:
+            parsed = datetime.strptime(
+                text,
+                date_format
+            )
+
+            return pd.Timestamp(
+                parsed
+            )
+
+        except ValueError:
+            continue
+
+    return pd.NaT
+
+
 def _normalize_datetime_column(
-    series: pd.Series
+    series: pd.Series,
+    column_name: str
 ) -> pd.Series:
 
-    if pd.api.types.is_datetime64_any_dtype(
-        series
-    ):
-        return series
-
-    return pd.to_datetime(
-        series,
-        errors="coerce",
-        format="mixed"
+    logger.info(
+        "ALPHAIK_DATE_PARSE: %s_START count=%s",
+        column_name,
+        len(series)
     )
+
+    values = []
+
+    invalid_count = 0
+
+    for value in series.tolist():
+
+        parsed = _parse_p6_date_value(
+            value
+        )
+
+        if (
+            pd.isna(parsed)
+            and value is not None
+        ):
+            try:
+                original_is_null = pd.isna(
+                    value
+                )
+            except (
+                TypeError,
+                ValueError
+            ):
+                original_is_null = False
+
+            if not original_is_null:
+                text = str(
+                    value
+                ).strip()
+
+                if text:
+                    invalid_count += 1
+
+        values.append(
+            parsed
+        )
+
+    result = pd.Series(
+        values,
+        index=series.index,
+        dtype="datetime64[ns]"
+    )
+
+    logger.info(
+        "ALPHAIK_DATE_PARSE: %s_DONE invalid=%s",
+        column_name,
+        invalid_count
+    )
+
+    return result
 
 
 def parse_workbook(
@@ -195,7 +350,8 @@ def analyze(
 
     task["start_date"] = (
         _normalize_datetime_column(
-            task["start_date"]
+            task["start_date"],
+            "start_date"
         )
     )
 
@@ -209,7 +365,8 @@ def analyze(
 
     task["end_date"] = (
         _normalize_datetime_column(
-            task["end_date"]
+            task["end_date"],
+            "end_date"
         )
     )
 
